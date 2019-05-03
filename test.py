@@ -10,67 +10,72 @@ import os
 # import matplotlib.patches as patches
 # from skimage import io, transform
 # from utils.voc_classname_encoder import classname_to_ids
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
-lr = 0.001
-batch_size = 1
-buffer_size = 3
-epochs = 300
-reduce_lr_epoch = [50, 200]
-ckpt_path = os.path.join('.', 'vgg_16.ckpt')
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# os.environ['CUDA_VISIBLE_DEVICES'] = '1'
+lr = 0.003
+batch_size = 32
+buffer_size = 1024
+epochs = 1500
+reduce_lr_epoch = []
 config = {
-    'data_shape': [800, 1200, 3],
+    'data_shape': [700, 1100, 3],
     'mode': 'train',                            # 'train' ,'test'
     'is_pretraining': False,
     'data_format': 'channels_last',             # 'channels_last' ,'channels_first'
     'num_classes': 20,
-    'weight_decay': 5e-4,
+    'weight_decay': 1e-4,
     'keep_prob': 0.5,                           # not used
     'batch_size': batch_size,
+    'rpn_first_step': 60000,                    # iters 0 - rpn_first_step train  rpn only
+    'rcnn_first_step': 100000,                   # iters rpn_first_step - rcnn_first_step train  rcnn only
+    'rpn_second_step': 160000,                   # iters rcnn_first_step - rpn_second_step train  rpn only
+                                                # iters rpn_second_step - end train  rcnn only
     'nms_score_threshold': 0.5,
     'nms_max_boxes': 20,
     'nms_iou_threshold': 0.45,
-    'pretraining_weight': ckpt_path
+    'post_nms_proposal': 500                    # when test, how many proposal are kept after nms
 }
 
 image_augmentor_config = {
     'data_format': 'channels_last',
-    'output_shape': [800, 1200],
-    'zoom_size': [820, 1220],
+    'output_shape': [700, 1100],
+    'zoom_size': [720, 1120],
     'crop_method': 'random',
     'flip_prob': [0., 0.5],
     'fill_mode': 'BILINEAR',
-    'keep_aspect_ratios': True,
+    'keep_aspect_ratios': False,
     'constant_values': 0.,
-    'rotate_range': [-5., 5.],
+    # 'rotate_range': [-5., 5.],
     'pad_truth_to': 60,
 }
 
-data = ['./data/test_00001-of-00005.tfrecord',
-        './data/test_00002-of-00005.tfrecord']
+data = os.listdir('./voc2007/')
+data = [os.path.join('./voc2007/', name) for name in data]
 
 train_gen = voc_utils.get_generator(data,
                                     batch_size, buffer_size, image_augmentor_config)
 trainset_provider = {
-    'data_shape': [800, 1200, 3],
-    'num_train': 100,
+    'data_shape': [700, 1100, 3],
+    'num_train': 5011,
     'num_val': 0,                               # not used
     'train_generator': train_gen,
     'val_generator': None                       # not used
 }
-refinedet = net.LHRCNN(config, trainset_provider)
-# refinedet.load_weight('./refinedet320/test-64954')
+rcnn = net.LHRCNN(config, trainset_provider)
+# rcnn.load_pretraining_weight('./rcnnpretrain/test-30000')
+# rcnn.load_rpn_weight('./lhrcnn/test-44304')
+# rcnn.load_weight('./lhrcnn/test-44304')
 for i in range(epochs):
     print('-'*25, 'epoch', i, '-'*25)
     if i in reduce_lr_epoch:
         lr = lr/10.
         print('reduce lr, lr=', lr, 'now')
-    mean_loss = refinedet.train_one_epoch(lr)
-    print('>> mean loss', mean_loss)
-    refinedet.save_weight('latest', './refinedet320/test')    # 'latest' 'best'
+    mean_loss = rcnn.train_one_epoch(lr)
+    print('>> mean loss', mean_loss, )
+    rcnn.save_weight('latest', './lhrcnn/test')    # 'latest' 'best'
 
 # img = io.imread('000026.jpg')
-# img = transform.resize(img, [300,300])
+# img = transform.resize(img, [700,1100])
 # img = np.expand_dims(img, 0)
 # result = ssd300.test_one_image(img)
 # id_to_clasname = {k:v for (v,k) in classname_to_ids.items()}
