@@ -207,7 +207,7 @@ class LHRCNN:
                 proposal_hwt = proposal_hw
                 confidence = tf.nn.softmax(rcnn_pconf)
                 class_id = tf.argmax(confidence, axis=-1)
-                conf_mask = tf.less(class_id, self.num_classes)
+                conf_mask = tf.less(class_id, self.num_classes-1)
                 rcnn_pbbox_yxt = tf.boolean_mask(rcnn_pbbox_yxt, conf_mask)
                 rcnn_pbbox_hwt = tf.boolean_mask(rcnn_pbbox_hwt, conf_mask)
                 confidence = tf.boolean_mask(confidence, conf_mask)
