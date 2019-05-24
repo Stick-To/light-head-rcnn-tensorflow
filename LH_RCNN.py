@@ -505,10 +505,6 @@ class LHRCNN:
         self.saver.restore(self.sess, path)
         print('load weight', path, 'successfully')
 
-    def load_rpn_weight(self, path):
-        self.rpn_saver.restore(self.sess, path)
-        print('load rpn weight', path, 'successfully')
-
     def load_pretraining_weight(self, path):
         self.pretraining_weight_saver.restore(self.sess, path)
         print('>> load pretraining weight', path, 'successfully')
