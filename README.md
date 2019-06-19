@@ -8,7 +8,7 @@ https://arxiv.org/abs/1711.07264
 
 # Train your own data
 
-see readme.me of https://github.com/Stick-To/Object-Detection-API-Tensorflow
+see readme.md of https://github.com/Stick-To/Object-Detection-API-Tensorflow
 
 
 # Experimental Environment
